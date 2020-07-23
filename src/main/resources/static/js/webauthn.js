@@ -47,6 +47,22 @@ function createCredential(options) {
     });
 }
 
+function registerFinish(credential) {
+    const url = '/attestation/result';
+    const data = {
+        'clientDataJSON': arrayBufferToBase64(credential.response.clientDataJSON),
+        'attestationObject': arrayBufferToBase64(credential.response.attestationObject),
+    };
+
+    return fetch(url, {
+        method: 'POST',
+        body: JSON.stringify(data),
+        headers: {
+            'Content-Type': 'application/json'
+        }
+    });
+}
+
 // 文字列をArrayBufferに変換
 function stringToArrayBuffer(string) {
     return new TextEncoder().encode(string);
@@ -55,4 +71,9 @@ function stringToArrayBuffer(string) {
 // Base64文字列をArrayBufferにデコード
 function base64ToArrayBuffer(base64String) {
     return Uint8Array.from(atob(base64String), c => c.charCodeAt(0));
+}
+
+// ArrayBufferをBase64文字列にエンコード
+function arrayBufferToBase64(arrayBuffer) {
+    return btoa(String.fromCharCode(...new Uint8Array(arrayBuffer)));
 }
