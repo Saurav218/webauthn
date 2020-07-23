@@ -7,6 +7,7 @@ plugins {
 group = 'jp.sbrahma'
 version = '0.0.1-SNAPSHOT'
 sourceCompatibility = '11'
+apply plugin: 'war'
 
 repositories {
 	mavenCentral()
@@ -20,6 +21,7 @@ dependencies {
 	testImplementation('org.springframework.boot:spring-boot-starter-test') {
 		exclude group: 'org.junit.vintage', module: 'junit-vintage-engine'
 	}
+	providedCompile "org.projectlombok:lombok:1.16.4"
 }
 
 test {
