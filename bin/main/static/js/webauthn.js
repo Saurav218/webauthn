@@ -93,3 +93,18 @@ async function authenticationAsync() {
         alert(error);
     }
 }
+
+function postAssertionOptions() {
+    const url = '/assertion/options';
+    const data = {
+        'email': document.getElementById('email').value
+    };
+
+    return fetch(url, {
+        method: 'POST',
+        body: JSON.stringify(data),
+        headers: {
+            'Content-Type': 'application/json'
+        }
+    });
+}
