@@ -1,5 +1,7 @@
 package jp.sbrahma.service;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.webauthn4j.converter.util.CborConverter;
 import com.webauthn4j.data.AttestationConveyancePreference;
 import com.webauthn4j.data.AuthenticatorAttachment;
@@ -24,6 +26,7 @@ import org.springframework.stereotype.Service;
 
 import jp.sbrahma.repository.CredentialRepository;
 import jp.sbrahma.repository.UserRepository;
+import jp.sbrahma.entity.Credential;
 import jp.sbrahma.entity.User;
 
 import java.security.SecureRandom;
@@ -105,5 +108,54 @@ public class WebAuthnRegistrationService {
         user.setId(userId);
         user.setEmail(email);
         return user;
+    }
+
+    private void creationFinish(User user, Challenge challenge, byte[] clientDataJSON, byte[] attestationObject)
+            throws JsonProcessingException {
+        // originの検証(中間者攻撃耐性)
+        var origin = Origin.create("http://localhost:8080");
+
+        // rpIdHashの検証(中間者攻撃耐性)
+        var rpId = "localhost";
+
+        // challengeの検証(リプレイ攻撃耐性)
+        var challengeBase64 = new DefaultChallenge(Base64.getEncoder().encode(challenge.getValue()));
+
+        var serverProperty = new ServerProperty(origin, rpId, challengeBase64, null);
+
+        // flagsの検証(ユーザ検証->多要素認証)
+        var userVerificationRequired = true;
+
+        var registrationContext = new WebAuthnRegistrationContext(clientDataJSON, attestationObject, serverProperty, userVerificationRequired);
+
+        // AttestationStatementは検証しない
+        var validator = WebAuthnRegistrationContextValidator.createNonStrictRegistrationContextValidator();
+
+        // clientDataJSONの検証(クレデンシャルの生成に渡されたデータ)
+        // attestationObjectの検証(認証器の検証)
+        var response = validator.validate(registrationContext);
+
+        // DBに保存する最低限の公開鍵クレデンシャルを取得
+        var credentialId = response.getAttestationObject().getAuthenticatorData().getAttestedCredentialData().getCredentialId();
+
+        var publicKey = response.getAttestationObject().getAuthenticatorData().getAttestedCredentialData().getCOSEKey();
+
+        var signatureCounter = response.getAttestationObject().getAuthenticatorData().getSignCount();
+
+        // ユーザ作成
+        if (userRepository.find(user.getEmail()).isEmpty()) {
+            userRepository.insert(user);
+        }
+
+        // 公開鍵を保存用にバイナリ化
+        var publicKeyBin = new ObjectMapper().writeValueAsBytes(publicKey);
+
+        // 公開鍵クレデンシャルの保存
+        var credential = new Credential();
+        credential.setCredentialId(credentialId);
+        credential.setUserId(user.getId());
+        credential.setPublicKey(publicKeyBin);
+        credential.setSignatureCounter(signatureCounter);
+        credentialRepository.insert(credential);
     }
 }
