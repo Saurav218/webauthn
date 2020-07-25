@@ -1,3 +1,4 @@
+// 登録
 async function registerAsync() {
     try {
         // RPサーバから公開鍵クレデンシャル生成オプションを取得
@@ -76,4 +77,19 @@ function base64ToArrayBuffer(base64String) {
 // ArrayBufferをBase64文字列にエンコード
 function arrayBufferToBase64(arrayBuffer) {
     return btoa(String.fromCharCode(...new Uint8Array(arrayBuffer)));
+}
+
+// 認証
+async function authenticationAsync() {
+    try {
+        // RPサーバから公開鍵クレデンシャル要求オプションを取得
+        const optionsRes = await postAssertionOptions();
+        const optionsJSON = await optionsRes.json();
+
+        // 認証器からAssertionResponseを取得
+        const response = await authenticationFinish(assertion);
+        signedIn(response);
+    } catch (error) {
+        alert(error);
+    }
 }
