@@ -110,7 +110,7 @@ public class WebAuthnRegistrationService {
         return user;
     }
 
-    private void creationFinish(User user, Challenge challenge, byte[] clientDataJSON, byte[] attestationObject)
+    public void creationFinish(User user, Challenge challenge, byte[] clientDataJSON, byte[] attestationObject)
             throws JsonProcessingException {
         // originの検証(中間者攻撃耐性)
         var origin = Origin.create("http://localhost:8080");
