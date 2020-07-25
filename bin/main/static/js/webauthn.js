@@ -108,3 +108,36 @@ function postAssertionOptions() {
         }
     });
 }
+
+function getAssertion(options) {
+    // ArrayBufferに変換
+    options.challenge = stringToArrayBuffer(options.challenge.value);
+    options.allowCredentials = options.allowCredentials
+        .map(credential => Object.assign({}, credential, {
+            id: base64ToArrayBuffer(credential.id),
+        }));
+
+    // 認証器からAssertionResponseを取得するWebAuthn API
+    return navigator.credentials.get({
+        'publicKey': options
+    });
+}
+
+function authenticationFinish(assertion) {
+    const url = 'assertion/result';
+    const data = {
+        'credentialId': arrayBufferToBase64(assertion.rawId),
+        'clientDataJSON': arrayBufferToBase64(assertion.response.clientDataJSON),
+        'authenticatorData': arrayBufferToBase64(assertion.response.authenticatorData),
+        'signature': arrayBufferToBase64(assertion.response.signature),
+        'userHandle': arrayBufferToBase64(assertion.response.userHandle),
+    };
+
+    return fetch(url, {
+        method: 'POST',
+        body: JSON.stringify(data),
+        headers: {
+            'Content-Type': 'application/json'
+        }
+    });
+}
